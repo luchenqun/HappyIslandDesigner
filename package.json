@@ -57,6 +57,9 @@
   "scripts": {
     "generate-tiles-cache": "node scripts/generateTilesCache.js",
     "generate-base-map-cache": "node scripts/generateBaseMapCache.js",
+    "generate-forest-design": "node scripts/generateForestDesign.mjs",
+    "render-island-design": "node scripts/renderIslandDesign.mjs",
+    "validate-island-design": "node scripts/validateIslandDesign.mjs",
     "predev": "yarn generate-tiles-cache && yarn generate-base-map-cache",
     "prebuild": "yarn generate-tiles-cache && yarn generate-base-map-cache",
     "dev": "webpack serve --mode development",

@@ -8,7 +8,9 @@
 
 `origin-island.json` 是用户提供的原始岛屿，也是以后所有新岛屿设计的唯一基准。开始设计前必须完整读取并复制该文件，在副本上修改；不得从空白地图重建，不得覆盖原文件，除非用户明确要求。保持 `version: "v2"`、`112 × 96` 坐标系、原始海岸轮廓及所有固定设施。当前可直接校验的固定对象为服务处/广场 `amenities_townhallSprite: [53, 66]` 和码头 `amenities_dock: [104, 84]`。
 
-每个完成的岛屿方案必须存放在 `design/`；目录不存在时先创建。文件采用从 `01` 开始的两位数字编号，并同时交付同名 JSON 和 PNG，例如 `design/01.json` 与 `design/01.png`。没有既有设计时使用 `01`，之后按现有最大编号加一；已有设计不得覆盖，编号超过 `99` 前先向用户确认新规则。JSON 必须是从 `origin-island.json` 派生的最终可加载数据，PNG 必须是在应用中加载该 JSON 后导出的对应成图，二者内容必须一致。不得只提交其中一个文件，也不得用界面截图代替地图导出图。
+每个完成的岛屿方案必须存放在 `design/`；目录不存在时先创建。文件采用从 `01` 开始的两位数字编号，并同时交付同名 JSON 和 PNG，例如 `design/01.json` 与 `design/01.png`。没有既有设计时使用 `01`，之后按现有最大编号加一；已有设计不得覆盖，编号超过 `99` 前先向用户确认新规则。JSON 必须是从 `origin-island.json` 派生的最终可加载数据，PNG 必须按应用保存逻辑由该 JSON 直接导出，二者内容必须一致。不得只提交其中一个文件，也不得用界面截图代替地图导出图。
+
+生成 PNG 时直接运行 `yarn render-island-design -- design/01.json design/01.png`。该命令复用项目的地形颜色、V2 边缘路径、网格、对象精灵和 PNG 隐写格式，通过无头 Chrome 将 JSON 直接渲染为图片；不要为导出启动 `yarn dev`，也不要自行绘制示意图。完成后运行 `yarn validate-island-design -- origin-island.json design/01.json design/01.png`，确认固定位置、图像内容和内嵌 JSON 一致。
 
 《集合啦！动物森友会》中，机场、服务处及广场、河流入海口、码头、海滩与海岸线、栈桥、半岛、秘密海滩和沿岸礁石不能通过岛屿创作家移动或改造。新方案必须原位保留这些元素。机场与河口在当前 JSON 中没有独立坐标字段，因此必须继承原始边界和河口端点，并通过加载渲染后的地图与原图对比确认；禁止猜测位置。内部河道、池塘和 `level1` 至 `level3` 地形可以重塑，但河流仍须连回原河口。其他住宅、商店、博物馆与露营地可重新规划。
 
@@ -20,6 +22,8 @@
 - `yarn dev`：先生成地图缓存，再启动 Webpack 开发服务器；访问 `http://localhost:8080/`。
 - `yarn lint`：检查 `app/` 下的 JavaScript 和 TypeScript 文件。
 - `yarn build`：重建缓存并生成生产包；提交前必须运行。
+- `yarn render-island-design -- design/01.json design/01.png`：无需 Web 服务，按应用保存格式将 JSON 直接导出为 PNG。
+- `yarn validate-island-design -- origin-island.json design/01.json design/01.png`：校验固定设施、河口、PNG 与内嵌 JSON。
 - `python -m http.server 8000`：从仓库根目录静态检查生产页面及相对资源路径。
 - `yarn generate-tiles-cache` / `yarn generate-base-map-cache`：素材变化后单独刷新对应缓存。
 
