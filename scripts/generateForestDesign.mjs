@@ -77,20 +77,9 @@ function ribbon(centerline, width) {
   return polygon([...left, ...right.reverse()], false);
 }
 
-function flattenPoints(points) {
-  return points.flatMap(([x, y]) => [x, y]);
-}
-
-function mirroredPairs(points) {
-  const result = [];
-  for (const [x, y] of points) result.push(x, y, MAP_WIDTH - x, y);
-  return result;
-}
-
 function mirroredTopLeftPairs(points, width) {
   const result = [];
-  for (const [x, y] of points)
-    result.push(x, y, MAP_WIDTH - width - x, y);
+  for (const [x, y] of points) result.push(x, y, MAP_WIDTH - width - x, y);
   return result;
 }
 
@@ -99,6 +88,8 @@ function assertFixedData(origin, design) {
   const designOuter = JSON.stringify(design.drawing.level1[0]);
   if (originOuter !== designOuter)
     throw new Error('The original coastline boundary changed.');
+  if (JSON.stringify(origin.edgeTiles) !== JSON.stringify(design.edgeTiles))
+    throw new Error('The original edge tiles changed.');
   if (JSON.stringify(design.objects.amenities_townhallSprite) !== '[53,66]') {
     throw new Error('Resident Services must remain at [53, 66].');
   }
@@ -125,11 +116,20 @@ export function createForestDesign(origin) {
     [
       [48, 49.4],
       [44, 51],
+      [41, 54],
+      [40, 55],
       [40, 56],
-      [37, 62],
-      [32, 67],
-      [28, 73],
-      [24, 78],
+      [40, 60],
+      [40, 61],
+      [37, 64],
+      [34, 67],
+      [29, 72],
+      [26, 74],
+      [26, 75],
+      [26, 79],
+      [26, 81],
+      [24, 81],
+      [24, 82],
       [24, 83],
     ],
     4,
@@ -162,7 +162,8 @@ export function createForestDesign(origin) {
   const leftLevel2 = polygon([
     [14, 14],
     [43, 14],
-    [47, 18],
+    [49, 18],
+    [49, 23],
     [47, 27],
     [43, 31],
     [42, 42],
@@ -170,7 +171,7 @@ export function createForestDesign(origin) {
     [21, 48],
     [14, 41],
   ]);
-  const centralLevel2 = octagon(48, 12, 64, 29, 3);
+  const centralLevel2 = octagon(48, 12, 64, 31, 3);
   design.drawing.level2 = [
     leftLevel2,
     mirror(leftLevel2),
@@ -204,18 +205,18 @@ export function createForestDesign(origin) {
   design.drawing.pathDirt = [
     rect(54, 48, 58, 62),
     rect(54, 76, 58, 88),
-    rect(17, 55, 36.75, 58),
-    rect(43.25, 55, 47, 58),
-    mirror(rect(17, 55, 36.75, 58)),
-    mirror(rect(43.25, 55, 47, 58)),
-    rect(16, 64, 29.5, 67),
-    mirror(rect(16, 64, 29.5, 67)),
-    rect(18, 75, 22, 78),
-    rect(29, 75, 47, 78),
-    mirror(rect(18, 75, 22, 78)),
-    mirror(rect(29, 75, 47, 78)),
-    rect(38, 82, 49, 85),
-    rect(63, 82, 74, 85),
+    rect(17, 56, 37, 60),
+    rect(43, 56, 47, 60),
+    mirror(rect(17, 56, 37, 60)),
+    mirror(rect(43, 56, 47, 60)),
+    rect(16, 65, 30.25, 68),
+    mirror(rect(16, 65, 30.25, 68)),
+    rect(18, 75, 23, 79),
+    rect(29, 75, 47, 79),
+    mirror(rect(18, 75, 23, 79)),
+    mirror(rect(29, 75, 47, 79)),
+    rect(38, 85, 49, 88),
+    mirror(rect(38, 85, 49, 88)),
   ];
   design.drawing.pathStone = [
     octagon(49, 48, 63, 53, 1.5),
@@ -227,34 +228,38 @@ export function createForestDesign(origin) {
     amenities_dock: [104, 84],
     amenities_townhallSprite: [53, 66],
     amenities_museumSprite: [20, 52],
-    amenities_nookSprite: [92, 52],
-    amenities_ableSprite: [34, 52],
-    amenities_campsiteSprite: [78, 52],
-    structures_playerhouseSprite: [56, 20],
-    structures_houseSprite: flattenPoints([
-      [17, 61],
-      [95, 61],
-      [29, 62],
-      [83, 62],
-      [17, 71],
-      [95, 71],
-      [35, 72],
-      [77, 72],
-      [43, 81],
-      [69, 81],
-    ]),
+    amenities_nookSprite: [85, 52],
+    amenities_ableSprite: [31, 52],
+    amenities_campsiteSprite: [77, 52],
+    structures_playerhouseSprite: [54, 18],
+    structures_houseSprite: mirroredTopLeftPairs(
+      [
+        [17, 61],
+        [24, 61],
+        [17, 71],
+        [35, 71],
+        [43, 81],
+      ],
+      4,
+    ),
     construction_bridgeWoodHorizontal: mirroredTopLeftPairs(
       [
-        [37, 55],
+        [37, 56],
         [23, 75],
       ],
       6,
     ),
-    construction_stairsWoodUp: mirroredPairs([
-      [43, 47],
-      [29, 34],
-    ]),
-    construction_stairsWoodDown: [56, 29],
+    construction_stairsWoodUp: [
+      ...mirroredTopLeftPairs(
+        [
+          [28, 48],
+          [29, 34],
+        ],
+        2,
+      ),
+      55,
+      25,
+    ],
   };
 
   const pinePairs = [
@@ -262,26 +267,26 @@ export function createForestDesign(origin) {
     [22, 18],
     [28, 17],
     [35, 18],
-    [41, 21],
+    [40, 20],
     [16, 25],
     [23, 27],
     [39, 28],
     [18, 36],
     [26, 39],
     [35, 37],
-    [17, 44],
+    [18, 49],
     [30, 45],
-    [40, 43],
-    [47, 16],
-    [47, 24],
+    [37, 40],
+    [44, 18],
+    [47, 22],
   ];
   const treePairs = [
     [12, 52],
-    [27, 51],
-    [38, 51],
+    [25, 49],
+    [36, 49],
     [12, 59],
     [24, 58],
-    [43, 60],
+    [46, 61],
     [11, 67],
     [26, 68],
     [44, 68],
@@ -295,21 +300,27 @@ export function createForestDesign(origin) {
   const bambooPairs = [
     [47, 54],
     [45, 58],
-    [42, 62],
+    [44, 62],
     [40, 66],
   ];
 
-  objects.tree_pine = mirroredPairs(pinePairs);
-  objects.tree_tree = mirroredPairs(treePairs);
-  objects.tree_bamboo = mirroredPairs(bambooPairs);
-  objects.tree_treeApple = mirroredPairs([
-    [12, 82],
-    [20, 88],
-  ]);
-  objects.tree_treePear = mirroredPairs([
-    [25, 86],
-    [36, 88],
-  ]);
+  objects.tree_pine = mirroredTopLeftPairs(pinePairs, 1);
+  objects.tree_tree = mirroredTopLeftPairs(treePairs, 1);
+  objects.tree_bamboo = mirroredTopLeftPairs(bambooPairs, 1);
+  objects.tree_treeApple = mirroredTopLeftPairs(
+    [
+      [12, 82],
+      [20, 88],
+    ],
+    1,
+  );
+  objects.tree_treePear = mirroredTopLeftPairs(
+    [
+      [25, 86],
+      [36, 88],
+    ],
+    1,
+  );
 
   const whiteFlowers = [
     [14, 20],
@@ -321,7 +332,7 @@ export function createForestDesign(origin) {
     [22, 43],
     [36, 42],
     [13, 55],
-    [31, 55],
+    [29, 54],
     [14, 64],
     [25, 66],
     [15, 78],
@@ -329,11 +340,11 @@ export function createForestDesign(origin) {
     [45, 86],
   ];
   const yellowFlowers = [
-    [18, 30],
+    [18, 32],
     [28, 31],
     [38, 32],
     [20, 57],
-    [39, 64],
+    [41, 64],
     [22, 73],
     [38, 75],
   ];
@@ -348,26 +359,35 @@ export function createForestDesign(origin) {
     [31, 85],
   ];
 
-  objects.flower_chrysanthemumWhite = mirroredPairs(whiteFlowers);
-  objects.flower_chrysanthemumYellow = mirroredPairs(yellowFlowers);
-  objects.flower_chrysanthemumGreen = mirroredPairs([
-    [20, 34],
-    [33, 35],
-    [18, 74],
-    [37, 84],
-  ]);
-  objects.flower_weedClover = mirroredPairs(undergrowth);
-  objects.flower_weedDandelion = mirroredPairs([
-    [17, 48],
-    [35, 49],
-    [12, 72],
-    [30, 79],
-  ]);
-  objects.flower_weedCattail = mirroredPairs([
-    [45, 45],
-    [41, 58],
-    [31, 70],
-  ]);
+  objects.flower_chrysanthemumWhite = mirroredTopLeftPairs(whiteFlowers, 1);
+  objects.flower_chrysanthemumYellow = mirroredTopLeftPairs(yellowFlowers, 1);
+  objects.flower_chrysanthemumGreen = mirroredTopLeftPairs(
+    [
+      [20, 34],
+      [33, 35],
+      [14, 72],
+      [37, 84],
+    ],
+    1,
+  );
+  objects.flower_weedClover = mirroredTopLeftPairs(undergrowth, 1);
+  objects.flower_weedDandelion = mirroredTopLeftPairs(
+    [
+      [17, 48],
+      [35, 49],
+      [12, 72],
+      [30, 79],
+    ],
+    1,
+  );
+  objects.flower_weedCattail = mirroredTopLeftPairs(
+    [
+      [45, 45],
+      [40, 62],
+      [31, 70],
+    ],
+    1,
+  );
 
   design.objects = objects;
   assertFixedData(origin, design);
