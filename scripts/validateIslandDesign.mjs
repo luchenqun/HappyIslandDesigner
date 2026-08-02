@@ -9,6 +9,8 @@ import {
 
 const MAP_WIDTH = 112;
 const MAP_HEIGHT = 96;
+const PATH_LAYERS = ['pathDirt', 'pathSand', 'pathStone', 'pathBrick'];
+const PATH_SAMPLE_STEP = 0.25;
 
 const BUILDING_SIZES = {
   townhallSprite: [6, 4],
@@ -65,10 +67,10 @@ function keyForPoint(x, y) {
   return `${x.toFixed(3)},${y.toFixed(3)}`;
 }
 
-function assertSymmetricPositions(name, values) {
+function assertSymmetricPositions(name, values, width = 0) {
   const pointSet = new Set(pairs(values).map(([x, y]) => keyForPoint(x, y)));
   for (const [x, y] of pairs(values)) {
-    if (!pointSet.has(keyForPoint(MAP_WIDTH - x, y)))
+    if (!pointSet.has(keyForPoint(MAP_WIDTH - width - x, y)))
       fail(`${name} is missing the mirror of [${x}, ${y}].`);
   }
 }
@@ -157,6 +159,42 @@ function validateDrawing(drawing) {
   }
 }
 
+function validatePathsOnLand(design) {
+  for (const layer of PATH_LAYERS) {
+    const polygons = design.drawing[layer] ?? [];
+    if (polygons.length === 0) continue;
+
+    const coordinates = polygons.flat();
+    const xCoordinates = coordinates.filter((_, index) => index % 2 === 0);
+    const yCoordinates = coordinates.filter((_, index) => index % 2 === 1);
+    const minX = Math.min(...xCoordinates);
+    const maxX = Math.max(...xCoordinates);
+    const minY = Math.min(...yCoordinates);
+    const maxY = Math.max(...yCoordinates);
+
+    for (
+      let y = minY + PATH_SAMPLE_STEP / 2;
+      y < maxY;
+      y += PATH_SAMPLE_STEP
+    ) {
+      for (
+        let x = minX + PATH_SAMPLE_STEP / 2;
+        x < maxX;
+        x += PATH_SAMPLE_STEP
+      ) {
+        if (
+          compoundContains(polygons, x, y) &&
+          !compoundContains(design.drawing.level1, x, y)
+        ) {
+          fail(
+            `${layer} is placed in water near [${x.toFixed(2)}, ${y.toFixed(2)}].`,
+          );
+        }
+      }
+    }
+  }
+}
+
 async function validateObjects(design) {
   const knownTypes = await loadObjectTypes();
   const buildings = [];
@@ -215,8 +253,10 @@ function validateSymmetry(design) {
       key === 'construction_bridgeWoodHorizontal' ||
       key === 'construction_stairsWoodUp',
   );
-  for (const [key, values] of symmetricGroups)
-    assertSymmetricPositions(key, values);
+  for (const [key, values] of symmetricGroups) {
+    const width = key === 'construction_bridgeWoodHorizontal' ? 6 : 0;
+    assertSymmetricPositions(key, values, width);
+  }
 
   assertMirroredPolygons(
     'level1 rivers',
@@ -296,6 +336,7 @@ export async function validateIslandDesign(originPath, designPath, pngPath) {
     fail('Original river mouth endpoints changed.');
 
   validateDrawing(design.drawing);
+  validatePathsOnLand(design);
   await validateObjects(design);
   validateSymmetry(design);
 

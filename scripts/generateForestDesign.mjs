@@ -87,6 +87,13 @@ function mirroredPairs(points) {
   return result;
 }
 
+function mirroredTopLeftPairs(points, width) {
+  const result = [];
+  for (const [x, y] of points)
+    result.push(x, y, MAP_WIDTH - width - x, y);
+  return result;
+}
+
 function assertFixedData(origin, design) {
   const originOuter = JSON.stringify(origin.drawing.level1[0]);
   const designOuter = JSON.stringify(design.drawing.level1[0]);
@@ -197,12 +204,16 @@ export function createForestDesign(origin) {
   design.drawing.pathDirt = [
     rect(54, 48, 58, 62),
     rect(54, 76, 58, 88),
-    rect(17, 55, 47, 58),
-    rect(65, 55, 95, 58),
-    rect(16, 64, 37, 67),
-    rect(75, 64, 96, 67),
-    rect(18, 75, 47, 78),
-    rect(65, 75, 94, 78),
+    rect(17, 55, 36.75, 58),
+    rect(43.25, 55, 47, 58),
+    mirror(rect(17, 55, 36.75, 58)),
+    mirror(rect(43.25, 55, 47, 58)),
+    rect(16, 64, 29.5, 67),
+    mirror(rect(16, 64, 29.5, 67)),
+    rect(18, 75, 22, 78),
+    rect(29, 75, 47, 78),
+    mirror(rect(18, 75, 22, 78)),
+    mirror(rect(29, 75, 47, 78)),
     rect(38, 82, 49, 85),
     rect(63, 82, 74, 85),
   ];
@@ -232,10 +243,13 @@ export function createForestDesign(origin) {
       [43, 81],
       [69, 81],
     ]),
-    construction_bridgeWoodHorizontal: mirroredPairs([
-      [39, 57],
-      [28, 76],
-    ]),
+    construction_bridgeWoodHorizontal: mirroredTopLeftPairs(
+      [
+        [37, 55],
+        [23, 75],
+      ],
+      6,
+    ),
     construction_stairsWoodUp: mirroredPairs([
       [43, 47],
       [29, 34],
