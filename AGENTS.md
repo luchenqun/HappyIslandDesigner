@@ -26,7 +26,7 @@
 
 生成 PNG 时直接运行 `yarn render-island-design -- design/01.json design/01.png`。该命令复用项目的地形颜色、V2 边缘路径、网格、对象精灵和 PNG 隐写格式，通过无头 Chrome 将 JSON 直接渲染为图片；不要为导出启动 `yarn dev`，也不要自行绘制示意图。完成后运行 `yarn validate-island-design -- origin-island.json design/01.json design/01.png`，确认固定位置、图像内容和内嵌 JSON 一致。
 
-当前自动校验仅支持横向四格水面的桥梁；若方案需要纵向桥、斜桥或三/五格水面，必须先扩展 `scripts/validateIslandDesign.mjs`，不得跳过校验。交付前除自动校验外，还必须人工检查入口视线、通行性、设施重叠及主题布局。
+当前自动校验支持横向和纵向四格水面的桥梁，并检查机场至所有建筑的可达性；若方案需要斜桥或三/五格水面，必须先扩展 `scripts/validateIslandDesign.mjs`，不得跳过校验。交付前除自动校验外，还必须人工检查入口视线、设施重叠及主题布局。
 
 ## Build, Test, and Development Commands
 

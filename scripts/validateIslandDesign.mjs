@@ -480,6 +480,31 @@ function validateHorizontalBridge(design, key, x, y) {
     fail(`${name} connects different terrain levels.`);
 }
 
+function validateVerticalBridge(design, key, x, y) {
+  const topApproach = { left: x, right: x + 4, top: y, bottom: y + 1 };
+  const water = { left: x, right: x + 4, top: y + 1, bottom: y + 5 };
+  const bottomApproach = {
+    left: x,
+    right: x + 4,
+    top: y + 5,
+    bottom: y + 6,
+  };
+  const name = `${key} at [${x}, ${y}]`;
+  const topLevel = assertRectangleOnSingleLevel(
+    design,
+    topApproach,
+    `${name} top approach`,
+  );
+  assertRectangleInWater(design, water, name);
+  const bottomLevel = assertRectangleOnSingleLevel(
+    design,
+    bottomApproach,
+    `${name} bottom approach`,
+  );
+  if (topLevel !== bottomLevel)
+    fail(`${name} connects different terrain levels.`);
+}
+
 function stairLandings(type, x, y, width, height) {
   if (type.endsWith('Up')) {
     return [
@@ -578,6 +603,7 @@ function validateConstructions(design, buildings, trees, decorations) {
     for (const [x, y] of pairs(values)) {
       const rectangle = {
         key,
+        type,
         x,
         y,
         left: x,
@@ -615,6 +641,8 @@ function validateConstructions(design, buildings, trees, decorations) {
       }
       if (type.endsWith('Horizontal') && isBridge)
         validateHorizontalBridge(design, key, x, y);
+      else if (type.endsWith('Vertical') && isBridge)
+        validateVerticalBridge(design, key, x, y);
       else if (isBridge)
         fail(`${key} validation is not implemented for this bridge direction.`);
       else if (isStair) validateStair(design, key, type, x, y, size);
@@ -636,6 +664,183 @@ function validateConstructions(design, buildings, trees, decorations) {
           `${constructions[i].key} at [${constructions[i].x}, ${constructions[i].y}] is too close to ${constructions[j].key} at [${constructions[j].x}, ${constructions[j].y}].`,
         );
       }
+    }
+  }
+  return constructions;
+}
+
+function gridKey(x, y) {
+  return `${x},${y}`;
+}
+
+function rectangleContainsCell(rectangle, x, y) {
+  const centerX = x + 0.5;
+  const centerY = y + 0.5;
+  return (
+    centerX >= rectangle.left &&
+    centerX < rectangle.right &&
+    centerY >= rectangle.top &&
+    centerY < rectangle.bottom
+  );
+}
+
+function addBidirectionalEdge(edges, from, to) {
+  if (!edges.has(from)) edges.set(from, []);
+  if (!edges.has(to)) edges.set(to, []);
+  edges.get(from).push(to);
+  edges.get(to).push(from);
+}
+
+function addConstructionEdges(edges, construction) {
+  const { type, x, y } = construction;
+  if (type.endsWith('Horizontal') && type.startsWith('bridge')) {
+    for (let offset = 0; offset < 4; offset += 1) {
+      addBidirectionalEdge(
+        edges,
+        gridKey(x, y + offset),
+        gridKey(x + 5, y + offset),
+      );
+    }
+    return;
+  }
+  if (type.endsWith('Vertical') && type.startsWith('bridge')) {
+    for (let offset = 0; offset < 4; offset += 1) {
+      addBidirectionalEdge(
+        edges,
+        gridKey(x + offset, y),
+        gridKey(x + offset, y + 5),
+      );
+    }
+    return;
+  }
+  if (!type.startsWith('stairs')) return;
+
+  if (type.endsWith('Up')) {
+    for (let offset = 0; offset < 2; offset += 1) {
+      addBidirectionalEdge(
+        edges,
+        gridKey(x + offset, y - 1),
+        gridKey(x + offset, y + 4),
+      );
+    }
+  } else if (type.endsWith('Down')) {
+    for (let offset = 0; offset < 2; offset += 1) {
+      addBidirectionalEdge(
+        edges,
+        gridKey(x + offset, y + 4),
+        gridKey(x + offset, y - 1),
+      );
+    }
+  } else if (type.endsWith('Left')) {
+    for (let offset = 0; offset < 2; offset += 1) {
+      addBidirectionalEdge(
+        edges,
+        gridKey(x - 1, y + offset),
+        gridKey(x + 4, y + offset),
+      );
+    }
+  } else if (type.endsWith('Right')) {
+    for (let offset = 0; offset < 2; offset += 1) {
+      addBidirectionalEdge(
+        edges,
+        gridKey(x + 4, y + offset),
+        gridKey(x - 1, y + offset),
+      );
+    }
+  }
+}
+
+function buildingApproachCells(building) {
+  const cells = [];
+  for (
+    let x = Math.floor(building.left);
+    x < Math.ceil(building.right);
+    x += 1
+  ) {
+    cells.push([x, Math.floor(building.top) - 1]);
+    cells.push([x, Math.ceil(building.bottom)]);
+  }
+  for (
+    let y = Math.floor(building.top);
+    y < Math.ceil(building.bottom);
+    y += 1
+  ) {
+    cells.push([Math.floor(building.left) - 1, y]);
+    cells.push([Math.ceil(building.right), y]);
+  }
+  return cells;
+}
+
+function airportEntranceCell(design) {
+  for (let blockX = 0; blockX < 6; blockX += 1) {
+    const leftIndex = blockX + 4;
+    if (
+      design.edgeTiles[leftIndex] === 34 &&
+      design.edgeTiles[leftIndex + 1] === 35
+    ) {
+      return [(blockX + 1) * 16, 83];
+    }
+  }
+  fail('The fixed airport edge tiles are missing.');
+}
+
+function validateBuildingReachability(design, buildings, constructions) {
+  const blocked = (x, y) =>
+    buildings.some((building) => rectangleContainsCell(building, x, y));
+  const passable = (x, y) =>
+    x >= 0 &&
+    x < MAP_WIDTH &&
+    y >= 0 &&
+    y < MAP_HEIGHT &&
+    terrainLevelAt(design, x + 0.5, y + 0.5) > 0 &&
+    !blocked(x, y);
+  const edges = new Map();
+  constructions.forEach((construction) =>
+    addConstructionEdges(edges, construction),
+  );
+
+  const start = airportEntranceCell(design);
+  if (!passable(...start)) fail('The airport entrance is not walkable.');
+  const queue = [start];
+  const visited = new Set([gridKey(...start)]);
+  for (let index = 0; index < queue.length; index += 1) {
+    const [x, y] = queue[index];
+    const level = terrainLevelAt(design, x + 0.5, y + 0.5);
+    const candidates = [
+      [x - 1, y],
+      [x + 1, y],
+      [x, y - 1],
+      [x, y + 1],
+    ];
+    for (const [nextX, nextY] of candidates) {
+      const key = gridKey(nextX, nextY);
+      if (
+        visited.has(key) ||
+        !passable(nextX, nextY) ||
+        terrainLevelAt(design, nextX + 0.5, nextY + 0.5) !== level
+      ) {
+        continue;
+      }
+      visited.add(key);
+      queue.push([nextX, nextY]);
+    }
+    for (const extra of edges.get(gridKey(x, y)) ?? []) {
+      if (visited.has(extra)) continue;
+      const [nextX, nextY] = extra.split(',').map(Number);
+      if (!passable(nextX, nextY)) continue;
+      visited.add(extra);
+      queue.push([nextX, nextY]);
+    }
+  }
+
+  for (const building of buildings) {
+    const reachable = buildingApproachCells(building).some(
+      ([x, y]) => passable(x, y) && visited.has(gridKey(x, y)),
+    );
+    if (!reachable) {
+      fail(
+        `${building.key} at [${building.x}, ${building.y}] is not reachable from the airport.`,
+      );
     }
   }
 }
@@ -688,7 +893,13 @@ export async function validateIslandDesign(originPath, designPath, pngPath) {
   validatePathsOnLand(design);
   validateCliffInset(design);
   const { buildings, trees, decorations } = await validateObjects(design);
-  validateConstructions(design, buildings, trees, decorations);
+  const constructions = validateConstructions(
+    design,
+    buildings,
+    trees,
+    decorations,
+  );
+  validateBuildingReachability(design, buildings, constructions);
 
   const png = parsePng(await readFile(pngPath));
   if (png.width !== 1320 || png.height !== 1120)
